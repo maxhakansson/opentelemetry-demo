@@ -1,0 +1,42 @@
+#!/usr/bin/python3
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import time
+from datetime import datetime
+import json
+from socketserver import ThreadingMixIn
+import threading
+import os
+import random
+
+hostName = '0.0.0.0'
+serverPort = int(os.environ.get('LOGIN_SERVICE_PORT'))
+
+class Handler(BaseHTTPRequestHandler):
+  def do_GET(self):
+  # curl http://<ServerIP>/index.html
+    if self.path == "/":
+      current_time = datetime.now().time()
+      if current_time.hour == 19: #Sleep during Hour 12PM Mountain Time 
+        time.sleep(random.randint(10, 99))
+      # Respond with the file contents.
+      self.send_response(200)
+      self.send_header("Content-type", "application/json")
+      self.end_headers()
+      data = {
+        "status": "success"
+      }
+      self.wfile.write(json.dumps(data).encode('utf-8'))
+
+    else:
+      self.send_response(404)
+
+    return
+
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+  """Handle requests in a separate thread."""
+  pass
+  
+if __name__ == "__main__":
+  webServer = ThreadedHTTPServer((hostName, serverPort), Handler)
+  print("Server started http://%s:%s" % (hostName, serverPort))
+  webServer.serve_forever()

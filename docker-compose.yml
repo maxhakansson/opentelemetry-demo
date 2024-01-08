@@ -313,6 +313,8 @@ services:
         condition: service_started
       shippingservice:
         condition: service_started
+      loginservice:
+        condition: service_started
       otelcol:
         condition: service_started
     logging: *logging
@@ -530,6 +532,32 @@ services:
       - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:4317/v1/traces
       - OTEL_RESOURCE_ATTRIBUTES
       - OTEL_SERVICE_NAME=shippingservice
+    depends_on:
+      otelcol:
+        condition: service_started
+    logging: *logging
+
+  # Login service
+  loginservice:
+    image: ${IMAGE_NAME}:${IMAGE_VERSION}-loginservice
+    container_name: login-service
+    build:
+      context: ./src/loginservice
+      cache_from:
+        - ${IMAGE_NAME}:${IMAGE_VERSION}-loginservice
+    deploy:
+      resources:
+        limits:
+          memory: 100M
+    restart: unless-stopped
+    ports:
+      - "${LOGIN_SERVICE_PORT}:${LOGIN_SERVICE_PORT}"
+    environment:
+      - APP_ENV=production
+      - LOGIN_SERVICE_PORT
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:4318/v1/traces
+      - OTEL_RESOURCE_ATTRIBUTES
+      - OTEL_SERVICE_NAME=loginservice
     depends_on:
       otelcol:
         condition: service_started
