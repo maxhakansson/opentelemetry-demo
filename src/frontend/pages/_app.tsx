@@ -4,12 +4,15 @@
 import '../styles/globals.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App, { AppContext, AppProps } from 'next/app';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 import { getCookie } from 'cookies-next';
 import CurrencyProvider from '../providers/Currency.provider';
 import CartProvider from '../providers/Cart.provider';
 import { ThemeProvider } from 'styled-components';
 import Theme from '../styles/Theme';
 import FrontendTracer from '../utils/telemetry/FrontendTracer';
+import { initConviva, trackPage, trackEvent } from '../utils/telemetry/conviva';
 
 declare global {
   interface Window {
@@ -24,11 +27,20 @@ declare global {
 if (typeof window !== 'undefined') {
   const collector = getCookie('otelCollectorUrl')?.toString() || '';
   FrontendTracer(collector);
+  initConviva();
+  trackEvent("[MH] App Loaded");
 }
 
 const queryClient = new QueryClient();
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+
+  useEffect(() => {
+    console.log('Tracking Conviva Page View', router.query)
+    trackPage();
+  }, [router.query]);
+
   return (
     <ThemeProvider theme={Theme}>
       <QueryClientProvider client={queryClient}>
