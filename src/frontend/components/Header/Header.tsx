@@ -3,6 +3,7 @@
 
 import CartIcon from '../CartIcon';
 import CurrencySwitcher from '../CurrencySwitcher';
+import LogoutButton from '../LogoutButton';
 import * as S from './Header.styled';
 
 const Header = () => {
@@ -16,6 +17,7 @@ const Header = () => {
           <S.Controls>
             <CurrencySwitcher />
             <CartIcon />
+            <LogoutButton />
           </S.Controls>
         </S.Container>
       </S.NavBar>
