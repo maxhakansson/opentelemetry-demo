@@ -12,7 +12,9 @@ import CartProvider from '../providers/Cart.provider';
 import { ThemeProvider } from 'styled-components';
 import Theme from '../styles/Theme';
 import FrontendTracer from '../utils/telemetry/FrontendTracer';
-import { initConviva, trackPage, trackEvent } from '../utils/telemetry/conviva';
+import { initConviva, trackConvivaPage, trackConvivaEvent, setConvivaUserId } from '../utils/telemetry/conviva';
+import SessionGateway from '../gateways/Session.gateway';
+
 
 declare global {
   interface Window {
@@ -28,17 +30,33 @@ if (typeof window !== 'undefined') {
   const collector = getCookie('otelCollectorUrl')?.toString() || '';
   FrontendTracer(collector);
   initConviva();
-  trackEvent("[MH] App Loaded");
+  console.log('Tracking App Loaded');
+  trackConvivaEvent("[MH] App Loaded");
 }
 
 const queryClient = new QueryClient();
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const { loggedIn, userId } = SessionGateway.getSession();
   const router = useRouter();
 
   useEffect(() => {
-    console.log('Tracking Conviva Page View', router.query)
-    trackPage();
+    if (!loggedIn && router.route !== '/login') {
+      console.log('Not logged in, go to /login from', router.route);
+      router.push('/login');
+    }
+  }, [loggedIn, router, router.route]);
+
+  useEffect(() => {
+    if (loggedIn) {
+      console.log('Setting User ID', userId);
+      setConvivaUserId(userId);
+    }
+  }, [loggedIn, userId]);
+
+  useEffect(() => {
+    console.log('Tracking Conviva Page View', router.query);
+    trackConvivaPage();
   }, [router.query]);
 
   return (

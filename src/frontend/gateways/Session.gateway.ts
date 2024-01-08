@@ -1,17 +1,17 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import { v4 } from 'uuid';
-
 interface ISession {
-  userId: string;
+  userId: string|null;
   currencyCode: string;
+  loggedIn: boolean;
 }
 
 const sessionKey = 'session';
 const defaultSession = {
-  userId: v4(),
+  userId: null,
   currencyCode: 'USD',
+  loggedIn: false,
 };
 
 const SessionGateway = () => ({

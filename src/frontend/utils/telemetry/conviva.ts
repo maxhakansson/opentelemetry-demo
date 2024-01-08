@@ -30,21 +30,24 @@ export function initConviva() {
       LinkClickTrackingPlugin(),
     ],
   });
-  setUserId("replace_me_by_the_userId");
 
   enableLinkClickTracking(); // Tracks all link clicks on the page
   enableButtonClickTracking();
   enableErrorTracking();
 }
 
-export function trackPage(pageTitle?: string) {
+export function setConvivaUserId(userId: string) {
+  setUserId(userId);
+}
+
+export function trackConvivaPage(pageTitle?: string) {
   trackPageView({ title: pageTitle });
 }
 
 type ConvivaCustomEventData = {
   [key: string]: string
 }
-export function trackEvent(eventName: string, eventData: ConvivaCustomEventData) {
+export function trackConvivaEvent(eventName: string, eventData?: ConvivaCustomEventData) {
   trackCustomEvent({
     name: eventName,
     data: eventData,

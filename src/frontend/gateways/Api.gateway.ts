@@ -3,6 +3,7 @@
 
 import { Ad, Address, Cart, CartItem, Money, PlaceOrderRequest, Product } from '../protos/demo';
 import { IProductCart, IProductCartItem, IProductCheckout } from '../types/Cart';
+import { LoginResponse } from '../types/LoginResponse';
 import request from '../utils/Request';
 import SessionGateway from './Session.gateway';
 
@@ -86,6 +87,14 @@ const ApiGateway = () => ({
       url: `${basePath}/data`,
       queryParams: {
         contextKeys,
+      },
+    });
+  },
+  login(username, password) {
+    return request<LoginResponse>({
+      url: `${basePath}/login`,
+      headers: {
+        Authorization: 'Basic ' + Buffer.from(username + ":" + password).toString('base64')
       },
     });
   },
