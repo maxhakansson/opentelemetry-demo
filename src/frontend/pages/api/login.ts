@@ -8,11 +8,11 @@ import { Empty } from '../../protos/demo';
 
 type TResponse = string[] | Empty;
 
-const handler = async ({ method, headers }: NextApiRequest, res: NextApiResponse<TResponse>) => {
+const handler = async ({ method, body }: NextApiRequest, res: NextApiResponse<TResponse>) => {
   switch (method) {
-    case 'GET': {
-      const { authorization } = headers;
-      const { status, message } = await LoginGateway.login(authorization);
+    case 'POST': {
+      const { username, password } = body;
+      const { status, message } = await LoginGateway.login(username, password);
 
       return res.status(200).json({
         status,

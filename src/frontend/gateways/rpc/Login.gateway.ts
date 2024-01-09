@@ -5,12 +5,17 @@ import { LoginResponse } from "../../types/LoginResponse";
 const { LOGIN_SERVICE_ADDR = '' } = process.env;
 
 const LoginGateway = () => ({
-  login(authorization: string) {
-    const headers = new Headers();
-    headers.set('Authorization', authorization);
+  login(username: string, password: string) {
     return new Promise<LoginResponse>((resolve, reject) => {
       fetch(LOGIN_SERVICE_ADDR, {
-        headers: headers
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        })
       }).then(function(response) {
         return response.json();
       }).then(function(response) {

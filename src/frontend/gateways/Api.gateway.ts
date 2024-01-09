@@ -95,9 +95,11 @@ const ApiGateway = () => ({
   login(username, password) {
     return request<LoginResponse>({
       url: `${basePath}/login`,
-      headers: {
-        Authorization: 'Basic ' + Buffer.from(username + ":" + password).toString('base64')
-      },
+      method: 'POST',
+      body: {
+        username,
+        password,
+      }
     });
   },
 });

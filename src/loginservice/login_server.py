@@ -1,14 +1,21 @@
 #!/usr/bin/python3
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import os
 
 app = Flask(__name__)
 
-@app.route('/')
+@app.route('/', methods = ['GET', 'POST'])
 def hello():
+    username = "unknown"
+    password = ""
+    if request.method == 'POST':
+      content = request.json
+      username = content['username']
+      password = content['password']
+
     data = {
-        "message": "Hello, this is a Flask app without OpenTelemetry tracing!",
+        "message": f"Hello {username}, this is a Flask app without OpenTelemetry tracing!",
         "status": "success"
     }
 
