@@ -2,6 +2,8 @@
 
 from flask import Flask, jsonify, request
 import os
+import time
+import random
 
 app = Flask(__name__)
 
@@ -10,14 +12,29 @@ def hello():
     username = "unknown"
     password = ""
     if request.method == 'POST':
-      content = request.json
-      username = content['username']
-      password = content['password']
+        content = request.json
+        username = content['username']
+        password = content['password']
 
-    data = {
-        "message": f"Hello {username}, this is a Flask app without OpenTelemetry tracing!",
-        "status": "success"
-    }
+        if "a" in password or "1" in password:
+            sleep = random.randint(5, 10)
+            time.sleep(sleep)
+            data = {
+                "message": "slow",
+                "status": "success"
+            }
+        else:
+            sleep = random.uniform(0, 1)
+            time.sleep(sleep)
+            data = {
+                "message": "fast",
+                "status": "success"
+            }
+    else:
+        data = {
+            "message": "why get?",
+            "status": "fail"
+        }
 
     # HTTP response with a 200 OK status code and JSON data
     return jsonify(data), 200
