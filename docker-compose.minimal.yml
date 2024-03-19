@@ -199,6 +199,7 @@ services:
       - CURRENCY_SERVICE_ADDR
       - PRODUCT_CATALOG_SERVICE_ADDR
       - RECOMMENDATION_SERVICE_ADDR
+      - LOGIN_SERVICE_ADDR
       - SHIPPING_SERVICE_ADDR
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_RESOURCE_ATTRIBUTES=${OTEL_RESOURCE_ATTRIBUTES}
@@ -215,6 +216,8 @@ services:
       checkoutservice:
         condition: service_started
       currencyservice:
+        condition: service_started
+      loginservice:
         condition: service_started
       productcatalogservice:
         condition: service_started
@@ -260,8 +263,8 @@ services:
     depends_on:
       frontend:
         condition: service_started
-      loadgenerator:
-        condition: service_started
+      # loadgenerator:
+      #   condition: service_started
       jaeger:
         condition: service_started
       grafana:
@@ -296,6 +299,33 @@ services:
       - PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
     depends_on:
       frontend:
+        condition: service_started
+    logging: *logging
+
+  # Login service
+  loginservice:
+    image: ${IMAGE_NAME}:${IMAGE_VERSION}-loginservice
+    container_name: login-service
+    build:
+      context: ./src/loginservice
+      cache_from:
+        - ${IMAGE_NAME}:${IMAGE_VERSION}-loginservice
+    deploy:
+      resources:
+        limits:
+          memory: 100M
+    restart: unless-stopped
+    ports:
+      - "${LOGIN_SERVICE_PORT}:${LOGIN_SERVICE_PORT}"
+    environment:
+      - APP_ENV=production
+      - LOGIN_SERVICE_PORT
+      - OTEL_EXPORTER_OTLP_ENDPOINT
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:4318/v1/traces
+      - OTEL_RESOURCE_ATTRIBUTES
+      - OTEL_SERVICE_NAME=loginservice
+    depends_on:
+      otelcol:
         condition: service_started
     logging: *logging
 
