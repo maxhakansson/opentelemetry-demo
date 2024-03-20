@@ -1,8 +1,8 @@
 import { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
-import Footer from '../../components/Footer';
 import Layout from '../../components/Layout';
+import Conditional from '../../components/Conditional';
 import * as S from '../../styles/Login.styled';
 import ApiGateway from '../../gateways/Api.gateway';
 import SessionGateway from '../../gateways/Session.gateway';
@@ -13,10 +13,11 @@ const Login: NextPage = () => {
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [loginProcessing, setLoginProcessing] = useState(false);
 
   const router = useRouter();
-  const onButtonClick = () => {
-
+  async function onButtonClick() {
+    setLoginProcessing(true);
     // Set initial error values to empty
     setEmailError("");
     setPasswordError("");
@@ -48,34 +49,40 @@ const Login: NextPage = () => {
       SessionGateway.setSessionValue('loggedIn', true);
       setConvivaUserId(email);
       router.push("/");
+    }).catch(() => {
+      setLoginProcessing(false);
     });
-  };
+  }
 
   return (
     <Layout>
       <S.Container>
-        <S.Title>Login</S.Title>
-        <br />
-        <S.InputContainer>
-          <S.InputBox value={email} placeholder="Enter your email here" onChange={ev => setEmail(ev.target.value)} />
-          <S.ErrorLabel>{emailError}</S.ErrorLabel>
-        </S.InputContainer>
-        <br />
-        <S.InputContainer>
-          <S.InputBox
-            value={password}
-            placeholder="Enter your password here"
-            onChange={ev => setPassword(ev.target.value)}
-          />
-          <S.ErrorLabel>{passwordError}</S.ErrorLabel>
-        </S.InputContainer>
-        <br />
-        <S.InputContainer>
-          <S.LoginButton onClick={onButtonClick}>Log in</S.LoginButton>
-        </S.InputContainer>
+        <Conditional showWhen={loginProcessing}>
+          <div>LOGGING IN...</div>
+        </Conditional>
+        <Conditional showWhen={!loginProcessing}>
+          <S.Title>Login</S.Title>
+          <br />
+          <S.InputContainer>
+            <S.InputBox value={email} placeholder="Enter your email here" onChange={ev => setEmail(ev.target.value)} />
+            <S.ErrorLabel>{emailError}</S.ErrorLabel>
+          </S.InputContainer>
+          <br />
+          <S.InputContainer>
+            <S.InputBox
+              value={password}
+              type="password"
+              placeholder="Enter your password here"
+              onChange={ev => setPassword(ev.target.value)}
+            />
+            <S.ErrorLabel>{passwordError}</S.ErrorLabel>
+          </S.InputContainer>
+          <br />
+          <S.InputContainer>
+            <S.LoginButton onClick={onButtonClick}>Log in</S.LoginButton>
+          </S.InputContainer>
+        </Conditional>
       </S.Container>
-
-      <Footer />
     </Layout>
   );
 };
