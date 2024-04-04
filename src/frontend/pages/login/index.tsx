@@ -25,21 +25,25 @@ const Login: NextPage = () => {
     // Check if the user has entered both fields correctly
     if ("" === email) {
         setEmailError("Please enter your email");
+        setLoginProcessing(false);
         return;
     }
 
     if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
         setEmailError("Please enter a valid email");
+        setLoginProcessing(false);
         return;
     }
 
     if ("" === password) {
         setPasswordError("Please enter a password");
+        setLoginProcessing(false);
         return;
     }
 
     if (password.length < 7) {
         setPasswordError("The password must be 8 characters or longer");
+        setLoginProcessing(false);
         return;
     }
 
