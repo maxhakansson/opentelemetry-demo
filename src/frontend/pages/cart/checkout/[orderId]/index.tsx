@@ -16,7 +16,7 @@ import { IProductCheckout } from '../../../../types/Cart';
 
 const Checkout: NextPage = () => {
   const { query } = useRouter();
-  const { items = [], shippingAddress } = JSON.parse((query.order || '{}') as string) as IProductCheckout;
+  const { items = [], shippingAddress } = JSON.parse((query['order'] || '{}') as string) as IProductCheckout;
 
   return (
     <AdProvider

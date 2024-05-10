@@ -30,7 +30,7 @@ const ProductDetail: NextPage = () => {
     cart: { items },
   } = useCart();
   const { selectedCurrency } = useCurrency();
-  const productId = query.productId as string;
+  const productId = query['productId'] as string;
 
   useEffect(() => {
     setQuantity(1);

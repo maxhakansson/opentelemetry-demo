@@ -20,7 +20,7 @@ const request = async <T>({
 }: IRequestParams): Promise<T> => {
   const response = await fetch(`${url}?${new URLSearchParams(queryParams).toString()}`, {
     method,
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ? JSON.stringify(body) : "",
     headers,
   });
 

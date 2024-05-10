@@ -8,7 +8,7 @@ import {context, propagation} from "@opentelemetry/api";
 const { ENV_PLATFORM, WEB_OTEL_SERVICE_NAME, PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, OTEL_COLLECTOR_HOST} = process.env;
 
 export default class MyDocument extends Document<{ envString: string }> {
-  static async getInitialProps(ctx: DocumentContext) {
+  static override async getInitialProps(ctx: DocumentContext) {
     const sheet = new ServerStyleSheet();
     const originalRenderPage = ctx.renderPage;
 
@@ -43,7 +43,7 @@ export default class MyDocument extends Document<{ envString: string }> {
     }
   }
 
-  render() {
+  override render() {
     return (
       <Html>
         <Head>
