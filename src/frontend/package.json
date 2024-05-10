@@ -7,11 +7,12 @@
     "build": "next build",
     "start": "node --require ./Instrumentation.js server.js",
     "lint": "next lint",
+    "tsc": "tsc",
     "cy:open": "cypress open",
     "grpc:generate": "mkdir -p ./protos && protoc -I ./pb  --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_opt=esModuleInterop=true --ts_proto_out=./protos --ts_proto_opt=outputServices=grpc-js demo.proto"
   },
   "dependencies": {
-    "@convivainc/conviva-js-appanalytics": "^0.4.6",
+    "@convivainc/conviva-js-appanalytics": "^0.6.7",
     "@grpc/grpc-js": "1.9.13",
     "@opentelemetry/api": "1.7.0",
     "@opentelemetry/auto-instrumentations-node": "0.40.2",
@@ -59,6 +60,6 @@
     "eslint-plugin-react": "7.33.2",
     "eslint-plugin-react-hooks": "4.6.0",
     "openapi-typescript": "6.7.1",
-    "typescript": "5.2.2"
+    "typescript": "^5.4.5"
   }
 }

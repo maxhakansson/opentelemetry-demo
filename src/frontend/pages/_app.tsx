@@ -48,7 +48,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   }, [loggedIn, router, router.route]);
 
   useEffect(() => {
-    if (loggedIn) {
+    if (loggedIn && userId) {
       console.log('Setting User ID', userId);
       setConvivaUserId(userId);
     }
