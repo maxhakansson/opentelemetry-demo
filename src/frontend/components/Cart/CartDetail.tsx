@@ -35,6 +35,10 @@ const CartDetail = () => {
       creditCardExpirationYear,
       creditCardNumber,
     }: IFormData) => {
+      if (!userId) {
+        return
+      }
+
       const order = await placeOrder({
         userId,
         email,

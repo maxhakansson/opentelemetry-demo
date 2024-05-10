@@ -15,7 +15,9 @@ const Footer = () => {
   const [sessionId, setSessionId] = useState('');
 
   useEffect(() => {
-    setSessionId(userId);
+    if (userId) {
+      setSessionId(userId);
+    }
   }, []);
 
   return (

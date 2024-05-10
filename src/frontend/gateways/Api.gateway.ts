@@ -94,7 +94,7 @@ const Apis = () => ({
       },
     });
   },
-  login(username, password) {
+  login(username: string, password: string) {
     return request<LoginResponse>({
       url: `${basePath}/login`,
       method: 'POST',
@@ -119,8 +119,9 @@ const ApiGateway = new Proxy(Apis(), {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return function (...args: any[]) {
+      const { userId } = SessionGateway.getSession();
       const baggage = propagation.getActiveBaggage() || propagation.createBaggage();
-      const newBaggage = baggage.setEntry(AttributeNames.SESSION_ID, { value: userId });
+      const newBaggage = baggage.setEntry(AttributeNames.SESSION_ID, { value: userId || "" });
       const newContext = propagation.setBaggage(context.active(), newBaggage);
       return context.with(newContext, () => {
         return Reflect.apply(originalFunction, undefined, args);
