@@ -21,6 +21,7 @@ on:
 
 jobs:
   build_and_push_images:
+    if: github.repository == 'open-telemetry/opentelemetry-demo'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -35,6 +36,10 @@ jobs:
       fail-fast: false
       matrix:
         file_tag:
+          - file: ./src/accountingservice/Dockerfile
+            tag_suffix: accountingservice
+            context: ./
+            setup-qemu: true
           - file: ./src/adservice/Dockerfile
             tag_suffix: adservice
             context: ./
@@ -49,18 +54,14 @@ jobs:
             setup-qemu: true
           - file: ./src/currencyservice/Dockerfile
             tag_suffix: currencyservice
-            context: ./src/currencyservice
+            context: ./
             setup-qemu: true
           - file: ./src/emailservice/Dockerfile
             tag_suffix: emailservice
             context: ./src/emailservice
             setup-qemu: true
-          # NOTE:
-          # https://github.com/open-telemetry/opentelemetry-demo/issues/956
-          # Until dedicated ARM runners are available for GHA we cannot upgrade
-          # OTP/Elixir versions. Please do not change the OTP/Elixir versions.
-          - file: ./src/featureflagservice/Dockerfile
-            tag_suffix: featureflagservice
+          - file: ./src/frauddetectionservice/Dockerfile
+            tag_suffix: frauddetectionservice
             context: ./
             setup-qemu: true
           - file: ./src/frontend/Dockerfile
@@ -69,6 +70,18 @@ jobs:
             setup-qemu: true
           - file: ./src/frontendproxy/Dockerfile
             tag_suffix: frontendproxy
+            context: ./
+            setup-qemu: true
+          - file: ./src/frontend/Dockerfile.cypress
+            tag_suffix: frontend-tests
+            context: ./
+            setup-qemu: true
+          - file: ./src/imageprovider/Dockerfile
+            tag_suffix: imageprovider
+            context: ./
+            setup-qemu: true
+          - file: ./src/kafka/Dockerfile
+            tag_suffix: kafka
             context: ./
             setup-qemu: true
           - file: ./src/loadgenerator/Dockerfile
@@ -87,32 +100,16 @@ jobs:
             tag_suffix: quoteservice
             context: ./
             setup-qemu: true
-          - file: ./src/shippingservice/Dockerfile
-            tag_suffix: shippingservice
-            context: ./
-            setup-qemu: true
           - file: ./src/recommendationservice/Dockerfile
             tag_suffix: recommendationservice
             context: ./
             setup-qemu: true
-          - file: ./src/kafka/Dockerfile
-            tag_suffix: kafka
+          - file: ./src/shippingservice/Dockerfile
+            tag_suffix: shippingservice
             context: ./
             setup-qemu: true
-          - file: ./src/accountingservice/Dockerfile
-            tag_suffix: accountingservice
-            context: ./
-            setup-qemu: true
-          - file: ./src/frauddetectionservice/Dockerfile
-            tag_suffix: frauddetectionservice
-            context: ./
-            setup-qemu: true
-          - file: ./src/frontend/Dockerfile.cypress
-            tag_suffix: frontend-tests
-            context: ./
-            setup-qemu: true
-          - file: ./test/Dockerfile
-            tag_suffix: integrationTests
+          - file: ./test/tracetesting/Dockerfile
+            tag_suffix: traceBasedTests
             context: ./
             setup-qemu: true
 
@@ -170,6 +167,8 @@ jobs:
           push: ${{ inputs.push }}
           tags: |
             ${{ env.DOCKERHUB_REPO }}:${{ inputs.version }}-${{matrix.file_tag.tag_suffix }}
+            ${{ env.DOCKERHUB_REPO }}:latest-${{matrix.file_tag.tag_suffix }}
             ${{ env.GHCR_REPO }}:${{ inputs.version }}-${{ matrix.file_tag.tag_suffix }}
+            ${{ env.GHCR_REPO }}:latest-${{ matrix.file_tag.tag_suffix }}
           cache-from: type=gha
           cache-to: type=gha

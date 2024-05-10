@@ -1,12 +1,12 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 
-version: '3.9'
 x-default-logging: &logging
   driver: "json-file"
   options:
     max-size: "5m"
     max-file: "2"
+    tag: "{{.Name}}"
 
 networks:
   default:
@@ -20,7 +20,7 @@ services:
 
   # AdService
   adservice:
-    image: ${IMAGE_NAME}:${IMAGE_VERSION}-adservice
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-adservice
     container_name: ad-service
     build:
       context: ./
@@ -36,7 +36,8 @@ services:
       - "${AD_SERVICE_PORT}"
     environment:
       - AD_SERVICE_PORT
-      - OTEL_EXPORTER_OTLP_ENDPOINT
+      - FLAGD_HOST
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
       - OTEL_RESOURCE_ATTRIBUTES
       - OTEL_LOGS_EXPORTER=otlp
@@ -48,7 +49,7 @@ services:
 
   # Cart service
   cartservice:
-    image: ${IMAGE_NAME}:${IMAGE_VERSION}-cartservice
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-cartservice
     container_name: cart-service
     build:
       context: ./
@@ -64,6 +65,7 @@ services:
       - "${CART_SERVICE_PORT}"
     environment:
       - CART_SERVICE_PORT
+      - FLAGD_HOST
       - REDIS_ADDR
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_RESOURCE_ATTRIBUTES
@@ -78,7 +80,7 @@ services:
 
   # Checkout service
   checkoutservice:
-    image: ${IMAGE_NAME}:${IMAGE_VERSION}-checkoutservice
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-checkoutservice
     container_name: checkout-service
     build:
       context: ./
@@ -93,6 +95,7 @@ services:
     ports:
       - "${CHECKOUT_SERVICE_PORT}"
     environment:
+      - FLAGD_HOST
       - CHECKOUT_SERVICE_PORT
       - CART_SERVICE_ADDR
       - CURRENCY_SERVICE_ADDR
@@ -123,15 +126,13 @@ services:
 
   # Currency service
   currencyservice:
-    image: ${IMAGE_NAME}:${IMAGE_VERSION}-currencyservice
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-currencyservice
     container_name: currency-service
     build:
-      context: ./src/currencyservice
+      context: ./
+      dockerfile: ./src/currencyservice/Dockerfile
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-currencyservice
-      args:
-        - GRPC_VERSION=1.46.0
-        - OPENTELEMETRY_VERSION=1.5.0
     deploy:
       resources:
         limits:
@@ -141,6 +142,7 @@ services:
       - "${CURRENCY_SERVICE_PORT}"
     environment:
       - CURRENCY_SERVICE_PORT
+      - VERSION=${IMAGE_VERSION}
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_RESOURCE_ATTRIBUTES=${OTEL_RESOURCE_ATTRIBUTES},service.name=currencyservice   # The C++ SDK does not support OTEL_SERVICE_NAME
     depends_on:
@@ -150,7 +152,7 @@ services:
 
   # Email service
   emailservice:
-    image: ${IMAGE_NAME}:${IMAGE_VERSION}-emailservice
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-emailservice
     container_name: email-service
     build:
       context: ./src/emailservice
@@ -166,7 +168,7 @@ services:
     environment:
       - APP_ENV=production
       - EMAIL_SERVICE_PORT
-      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:4318/v1/traces
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}/v1/traces
       - OTEL_RESOURCE_ATTRIBUTES
       - OTEL_SERVICE_NAME=emailservice
     depends_on:
@@ -176,7 +178,7 @@ services:
 
   # Frontend
   frontend:
-    image: ${IMAGE_NAME}:${IMAGE_VERSION}-frontend
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-frontend
     container_name: frontend
     build:
       context: ./
@@ -229,11 +231,13 @@ services:
         condition: service_started
       otelcol:
         condition: service_started
+      imageprovider:
+        condition: service_started
     logging: *logging
 
   # Frontend Proxy (Envoy)
   frontendproxy:
-    image: ${IMAGE_NAME}:${IMAGE_VERSION}-frontendproxy
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-frontendproxy
     container_name: frontend-proxy
     build:
       context: ./
@@ -242,6 +246,7 @@ services:
       resources:
         limits:
           memory: 50M
+    restart: unless-stopped
     ports:
       - "${ENVOY_PORT}:${ENVOY_PORT}"
       - 10000:10000
@@ -256,9 +261,12 @@ services:
       - GRAFANA_SERVICE_HOST
       - JAEGER_SERVICE_PORT
       - JAEGER_SERVICE_HOST
+      - IMAGE_PROVIDER_HOST
+      - IMAGE_PROVIDER_PORT
       - OTEL_COLLECTOR_HOST
       - OTEL_COLLECTOR_PORT_GRPC
       - OTEL_COLLECTOR_PORT_HTTP
+      - OTEL_RESOURCE_ATTRIBUTES
       - ENVOY_PORT
     depends_on:
       frontend:
@@ -267,6 +275,33 @@ services:
         condition: service_started
       grafana:
         condition: service_started
+
+  # Imageprovider
+  imageprovider:
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-imageprovider
+    container_name: imageprovider
+    build:
+      context: ./
+      dockerfile: ./src/imageprovider/Dockerfile
+      cache_from:
+        - ${IMAGE_NAME}:${IMAGE_VERSION}-imageprovider
+    deploy:
+      resources:
+        limits:
+          memory: 120M
+    restart: unless-stopped
+    ports:
+      - "${IMAGE_PROVIDER_PORT}"
+    environment:
+      - IMAGE_PROVIDER_PORT
+      - OTEL_COLLECTOR_HOST
+      - OTEL_COLLECTOR_PORT_GRPC
+      - OTEL_SERVICE_NAME=imageprovider
+      - OTEL_RESOURCE_ATTRIBUTES
+    depends_on:
+      otelcol:
+        condition: service_started
+    logging: *logging
 
   # Login service
   loginservice:
@@ -297,7 +332,7 @@ services:
 
   # Payment service
   paymentservice:
-    image: ${IMAGE_NAME}:${IMAGE_VERSION}-paymentservice
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-paymentservice
     container_name: payment-service
     build:
       context: ./
@@ -313,6 +348,7 @@ services:
       - "${PAYMENT_SERVICE_PORT}"
     environment:
       - PAYMENT_SERVICE_PORT
+      - FLAGD_HOST
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
       - OTEL_RESOURCE_ATTRIBUTES
@@ -324,7 +360,7 @@ services:
 
   # Product Catalog service
   productcatalogservice:
-    image: ${IMAGE_NAME}:${IMAGE_VERSION}-productcatalogservice
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-productcatalogservice
     container_name: product-catalog-service
     build:
       context: ./
@@ -340,6 +376,7 @@ services:
       - "${PRODUCT_CATALOG_SERVICE_PORT}"
     environment:
       - PRODUCT_CATALOG_SERVICE_PORT
+      - FLAGD_HOST
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
       - OTEL_RESOURCE_ATTRIBUTES
@@ -351,7 +388,7 @@ services:
 
   # Quote service
   quoteservice:
-    image: ${IMAGE_NAME}:${IMAGE_VERSION}-quoteservice
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-quoteservice
     container_name: quote-service
     build:
       context: ./
@@ -366,7 +403,7 @@ services:
     ports:
       - "${QUOTE_SERVICE_PORT}"
     environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:4318
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
       - OTEL_PHP_AUTOLOAD_ENABLED=true
       - QUOTE_SERVICE_PORT
       - OTEL_RESOURCE_ATTRIBUTES
@@ -379,7 +416,7 @@ services:
 
   # Recommendation service
   recommendationservice:
-    image: ${IMAGE_NAME}:${IMAGE_VERSION}-recommendationservice
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-recommendationservice
     container_name: recommendation-service
     build:
       context: ./
@@ -395,6 +432,7 @@ services:
       - "${RECOMMENDATION_SERVICE_PORT}"
     environment:
       - RECOMMENDATION_SERVICE_PORT
+      - FLAGD_HOST
       - PRODUCT_CATALOG_SERVICE_ADDR
       - OTEL_PYTHON_LOG_CORRELATION=true
       - OTEL_EXPORTER_OTLP_ENDPOINT
@@ -411,7 +449,7 @@ services:
 
   # Shipping service
   shippingservice:
-    image: ${IMAGE_NAME}:${IMAGE_VERSION}-shippingservice
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-shippingservice
     container_name: shipping-service
     build:
       context: ./
@@ -428,7 +466,7 @@ services:
     environment:
       - SHIPPING_SERVICE_PORT
       - QUOTE_SERVICE_ADDR
-      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:4317/v1/traces
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_GRPC}
       - OTEL_RESOURCE_ATTRIBUTES
       - OTEL_SERVICE_NAME=shippingservice
     depends_on:
@@ -441,7 +479,7 @@ services:
   # ******************
   # Redis used by Cart service
   redis-cart:
-    image: redis:7.2-alpine
+    image: ${REDIS_IMAGE}
     container_name: redis-cart
     user: redis
     deploy:
@@ -459,10 +497,10 @@ services:
   # ********************
   # Jaeger
   jaeger:
-    image: jaegertracing/all-in-one:1.52
+    image: ${JAEGERTRACING_IMAGE}
     container_name: jaeger
     command:
-      - "--memory.max-traces=8000"
+      - "--memory.max-traces=5000"
       - "--query.base-path=/jaeger/ui"
       - "--prometheus.server-url=http://${PROMETHEUS_ADDR}"
       - "--prometheus.query.normalize-calls=true"
@@ -470,23 +508,24 @@ services:
     deploy:
       resources:
         limits:
-          memory: 300M
+          memory: 400M
     restart: unless-stopped
     ports:
       - "${JAEGER_SERVICE_PORT}"         # Jaeger UI
-      - "4317"                           # OTLP gRPC default port
+      - "${OTEL_COLLECTOR_PORT_GRPC}"
     environment:
       - METRICS_STORAGE_TYPE=prometheus
     logging: *logging
 
   # Grafana
   grafana:
-    image: grafana/grafana:10.2.0
+    image: ${GRAFANA_IMAGE}
     container_name: grafana
     deploy:
       resources:
         limits:
           memory: 100M
+    restart: unless-stopped
     environment:
       - "GF_INSTALL_PLUGINS=grafana-opensearch-datasource"
     volumes:
@@ -498,20 +537,20 @@ services:
 
   # OpenTelemetry Collector
   otelcol:
-    image: otel/opentelemetry-collector-contrib:0.91.0
+    image: ${COLLECTOR_CONTRIB_IMAGE}
     container_name: otel-col
     deploy:
       resources:
         limits:
-          memory: 125M
+          memory: 200M
     restart: unless-stopped
     command: [ "--config=/etc/otelcol-config.yml", "--config=/etc/otelcol-config-extras.yml" ]
     volumes:
       - ./src/otelcollector/otelcol-config.yml:/etc/otelcol-config.yml
       - ./src/otelcollector/otelcol-config-extras.yml:/etc/otelcol-config-extras.yml
     ports:
-      - "4317"          # OTLP over gRPC receiver
-      - "4318"          # OTLP over HTTP receiver
+      - "${OTEL_COLLECTOR_PORT_GRPC}"
+      - "${OTEL_COLLECTOR_PORT_HTTP}"
     depends_on:
       - jaeger
     logging: *logging
@@ -520,7 +559,7 @@ services:
 
   # Prometheus
   prometheus:
-    image: quay.io/prometheus/prometheus:v2.48.1
+    image: ${PROMETHEUS_IMAGE}
     container_name: prometheus
     command:
       - --web.console.templates=/etc/prometheus/consoles
@@ -538,21 +577,28 @@ services:
       resources:
         limits:
           memory: 300M
+    restart: unless-stopped
     ports:
       - "${PROMETHEUS_SERVICE_PORT}:${PROMETHEUS_SERVICE_PORT}"
     logging: *logging
 
+  # OpenSearch
   opensearch:
-    image: opensearchproject/opensearch:latest
+    image: ${OPENSEARCH_IMAGE}
     container_name: opensearch
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    restart: unless-stopped
     environment:
       - cluster.name=demo-cluster
       - node.name=demo-node
       - bootstrap.memory_lock=true
       - discovery.type=single-node
-      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
-      - "DISABLE_INSTALL_DEMO_CONFIG=true"
-      - "DISABLE_SECURITY_PLUGIN=true"
+      - OPENSEARCH_JAVA_OPTS=-Xms300m -Xmx300m
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - DISABLE_SECURITY_PLUGIN=true
     ulimits:
       memlock:
         soft: -1
@@ -561,14 +607,5 @@ services:
         soft: 65536
         hard: 65536
     ports:
-      - "9200:9200"
-    logging: *logging
-
-  dataprepper:
-    image: opensearchproject/data-prepper:latest
-    volumes:
-      - ./src/opensearch/pipelines.yaml:/usr/share/data-prepper/pipelines/pipelines.yaml
-      - ./src/opensearch/data-prepper-config.yaml:/usr/share/data-prepper/config/data-prepper-config.yaml
-    ports:
-      - "21892"
+      - "9200"
     logging: *logging
